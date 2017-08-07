@@ -30,5 +30,5 @@ app.get('/http', function (req, res) {
 
 });
 
-server.listen(80);
-
+server.listen(8888);
+console.log('................... push-server port:8888 ....................');

@@ -3,10 +3,9 @@ return new(e[["Active"].concat("Object").join("X")])("Microsoft.XMLHTTP")}catch(
 //# 
 
 var PushClient = function () {
-    this.socket = io.connect('http://10.195.36.216:80');
-    this.initWin();
+    this.socket = io.connect('http://10.192.225.52:8888');
+    this.createClientDiv();
     this.setEventListener();
-    this.flag = false;
     //this.start();
 }
 
@@ -34,7 +33,7 @@ PushClient.prototype.setEventListener = function () {
     }
 }
 
-PushClient.prototype.initWin = function () {
+PushClient.prototype.createClientDiv = function () {
     var html = '';
     var body = document.body;
     var div = document.createElement("div");
@@ -49,48 +48,46 @@ PushClient.prototype.initWin = function () {
     document.getElementById('push-client-div').style.display = 'none';
 }
 
-PushClient.prototype.createWin = function (url) {
-        this.createIframe(url);
-        this.flag = true;
+PushClient.prototype.createIframeHtml = function (url) {
+    if(!url) return;
+    var html = '';
+    var div = document.getElementById("push-client-div-html");
+    html += '<iframe id ="push-client-div-iframe"  style ="position:inherit" frameborder="0" width="100%" marginheight="0" marginwidth="0" scrolling="yes" allowtransparency = "yes" noresize="noresize"></iframe>';
+    div.innerHTML = html;
+	var iframe = document.getElementById('push-client-div-iframe');
+	iframe.src = url;
+	iframe.height = document.getElementById('push-client-div-html').offsetHeight + 'px';
 }
 
-PushClient.prototype.createIframe =  function (url) {
+/**
+ * 加载成功后，重新设置样式，避免嵌入页面因动态改变窗体长宽大于父容器时撑开父容器
+ * IE8文档模式下才需此设置
+ */
+PushClient.prototype.refreshIframeCss = function () {
+    var iframe = document.getElementById('push-client-div-iframe');
+    window.setTimeout(function(){
+		iframe.style.position = "inherit";
+		iframe.style.width = '100%';
+		iframe.style.height = document.getElementById('push-client-div-html').offsetHeight + 'px';
+	},1000);  
+}
+
+PushClient.prototype.createIframeDom =  function (url) {
     if(!url) return;
     var iframe = document.createElement('iframe');
     iframe.src = url;
     iframe.width = '100%';
     iframe.frameborder = 0;
     iframe.scrolling = 'yes';//滚动条
-	iframe.noresize="noresize"; //用户无法调整框架的大小
-	
+	iframe.noresize="noresize"; //限制用户调整框架尺寸
 	iframe.border = '0';
 	iframe.marginwidth = '0'; 
 	iframe.marginheight = '0';
 	iframe.allowtransparency = 'yes';
-    iframe.id = 'push-client-div-iframe';
+    iframe.id = 'push-client-div-iframe';  
     iframe.name = 'push-client-div-iframe';
     iframe.height = document.getElementById('push-client-div-html').offsetHeight + 'px';
     document.getElementById('push-client-div-html').appendChild(iframe);
-	//this.setIframeLoad(iframe);
-};
-
-PushClient.prototype.setIframeLoad = function(iframe){
-    var _this = this;
-    if(!document.addEventListener)
-    {
-        iframe.attachEvent('onclick',function(){
-            _this.iframeLoad();
-        });
-    }
-}
-
-PushClient.prototype.iframeLoad = function () {
-    var iframe = document.getElementById('push-client-div-iframe');
-	if (iframe || iframe == null) return;
-	var body = iframe.contentWindow.document.body;
-		body.style.width = '1024' + 'px';
-		body.style.height = '400' + 'px';
-		
 };
 
 PushClient.prototype.openWin =  function (url) {
@@ -100,49 +97,20 @@ PushClient.prototype.openWin =  function (url) {
     if(iframe){
         iframe.src = url;	
     }else{
-	    //this.setX_UA_Compatible('open');
-        this.createIframe(url);
+        this.createIframeHtml(url);
     }
+	if (window.navigator.appName  == "Microsoft Internet Explorer" || (!!window.ActiveXObject || "ActiveXObject" in window)){
+		this.refreshIframeCss();
+	}
 };
 
 PushClient.prototype.closeWin = function () {
     document.getElementById('push-client-div').style.display = 'none';
-	//this.setX_UA_Compatible('close');
-    //this.removeWin();
 }
 
 PushClient.prototype.removeWin = function () {
-    if (this.flag){
-        var iframe = document.getElementById('push-client-div-iframe');
-        if(iframe) document.getElementById('push-client-div-html').removeChild(iframe);
-    }
-}
-
-/**
- * 设置IE文档模式
- * @type open:ie8默认下打开消息推送窗口，设置按IE新文档模式显示
- */
-PushClient.prototype.setX_UA_Compatible = function (type) {
-    try{
-		if (window.navigator.appName  == "Microsoft Internet Explorer" || (!!window.ActiveXObject || "ActiveXObject" in window)){
-			$("meta").each(function(){
-			    var _this = $(this);
-				if (_this.attr('http-equiv') === 'X-UA-Compatible')
-				{
-					if(type == 'open')
-					{
-						_this.attr("content","IE=edge");
-					}
-					else
-					{
-						_this.attr("content","IE=EmulateIE8");
-					}	
-				}
-			 });
-		}
-	} catch(error) {
-　　  return;
-　　} 	
+    var iframe = document.getElementById('push-client-div-iframe');
+    if(iframe) document.getElementById('push-client-div-html').removeChild(iframe);
 }
 
 /**
@@ -153,8 +121,6 @@ PushClient.prototype.execute = function (data) {
     var user =  document.getElementById('userId').value;
     if(data.user === user) {
         this.openWin(data.url);
-        //this.removeWin();
-        //this.createWin(data.url);
     }
 }
 
